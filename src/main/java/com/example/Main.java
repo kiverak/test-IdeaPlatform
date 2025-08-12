@@ -29,9 +29,10 @@ public class Main {
             System.out.printf("Carrier: %s, minimal flight time: %d hours %d min%n", entry.getKey(), hours, minutes);
         }
 
-        BigDecimal averagePrice = ticketService.getAveragePrice(tickets);
+        List<Ticket> ticketsWithOriginAndDestination = ticketService.getTicketsWithOriginAndDestination(tickets, origin, destination);
+        BigDecimal averagePrice = ticketService.getAveragePrice(ticketsWithOriginAndDestination);
         System.out.printf("Average price: %s%n", averagePrice);
-        BigDecimal medianaPrice = ticketService.getMedianaPrice(tickets);
+        BigDecimal medianaPrice = ticketService.getMedianaPrice(ticketsWithOriginAndDestination);
         System.out.printf("Mediana price: %s%n", medianaPrice);
         System.out.printf("Average price - mediana price: %s%n", averagePrice.subtract(medianaPrice));
     }

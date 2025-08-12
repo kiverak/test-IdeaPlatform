@@ -113,6 +113,13 @@ public class TicketService {
         return Duration.between(departure, arrival).plus(timeZoneCorrection);
     }
 
+    public List<Ticket> getTicketsWithOriginAndDestination(List<Ticket> tickets, String origin, String destination) {
+        return tickets.stream()
+                .filter(t -> t.origin().equals(origin))
+                .filter(t-> t.destination().equals(destination))
+                .toList();
+    }
+
     public BigDecimal getAveragePrice(List<Ticket> tickets) {
         if (tickets.isEmpty()) {
             throw new IllegalArgumentException("Tickets list is empty");

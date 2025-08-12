@@ -14,14 +14,14 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class TicketReaderServiceTest {
+class TicketServiceTest {
 
     @Spy
     @InjectMocks
@@ -29,10 +29,23 @@ class TicketReaderServiceTest {
 
     private MockedStatic<TicketsMapper> ticketsMapperMock;
 
+    private List<Ticket> allTickets;
+    private Ticket vvoToTlv1;
+    private Ticket vvoToTlv2;
+    private Ticket vvoToUfa;
+    private Ticket lrnToTlv;
+
     @BeforeEach
     void setUp() {
         // Mock the static TicketsMapper class before each test
         ticketsMapperMock = mockStatic(TicketsMapper.class);
+
+        vvoToTlv1 = new Ticket("VVO", "Владивосток", "TLV", "Тель-Авив", "12.05.18", "16:20", "12.05.18", "22:10", "TK", 3, "12400");
+        vvoToTlv2 = new Ticket("VVO", "Владивосток", "TLV", "Тель-Авив", "12.05.18", "17:20", "12.05.18", "23:50", "S7", 1, "13100");
+        vvoToUfa = new Ticket("VVO", "Владивосток", "UFA", "Уфа", "12.05.18", "15:15", "12.05.18", "17:45", "TK", 1, "33400");
+        lrnToTlv = new Ticket("LRN", "Ларнака", "TLV", "Тель-Авив", "12.05.18", "12:50", "12.05.18", "14:30", "SU", 1, "7000");
+
+        allTickets = List.of(vvoToTlv1, vvoToTlv2, vvoToUfa, lrnToTlv);
     }
 
     @AfterEach
@@ -128,5 +141,80 @@ class TicketReaderServiceTest {
     void readTickets_withNullSourceType_throwsIllegalArgumentException() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> ticketService.readTickets("some-input", null));
+    }
+
+
+
+    @Test
+    @DisplayName("should return only tickets matching both origin and destination")
+    void shouldReturnMatchingTickets() {
+        // Given
+        String origin = "VVO";
+        String destination = "TLV";
+        List<Ticket> expected = List.of(vvoToTlv1, vvoToTlv2);
+
+        // When
+        List<Ticket> result = ticketService.getTicketsWithOriginAndDestination(allTickets, origin, destination);
+
+        // Then
+        assertEquals(2, result.size());
+        assertTrue(result.containsAll(expected));
+    }
+
+    @Test
+    @DisplayName("should return an empty list when no tickets match the destination")
+    void shouldReturnEmptyListWhenNoDestinationMatch() {
+        // Given
+        String origin = "VVO";
+        String destination = "JFK"; // No flights to JFK
+
+        // When
+        List<Ticket> result = ticketService.getTicketsWithOriginAndDestination(allTickets, origin, destination);
+
+        // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("should return an empty list when no tickets match the origin")
+    void shouldReturnEmptyListWhenNoOriginMatch() {
+        // Given
+        String origin = "JFK"; // No flights from JFK
+        String destination = "TLV";
+
+        // When
+        List<Ticket> result = ticketService.getTicketsWithOriginAndDestination(allTickets, origin, destination);
+
+        // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("should return an empty list when the input list is empty")
+    void shouldReturnEmptyListForEmptyInput() {
+        // Given
+        List<Ticket> emptyList = Collections.emptyList();
+        String origin = "VVO";
+        String destination = "TLV";
+
+        // When
+        List<Ticket> result = ticketService.getTicketsWithOriginAndDestination(emptyList, origin, destination);
+
+        // Then
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("should be case-sensitive and return an empty list for mismatched case")
+    void shouldBeCaseSensitive() {
+        // Given
+        String origin = "vvo"; // Lowercase
+        String destination = "tlv"; // Lowercase
+
+        // When
+        List<Ticket> result = ticketService.getTicketsWithOriginAndDestination(allTickets, origin, destination);
+
+        // Then
+        assertTrue(result.isEmpty());
     }
 }
