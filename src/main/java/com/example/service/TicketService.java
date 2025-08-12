@@ -5,6 +5,7 @@ import com.example.mapper.TicketsMapper;
 import com.example.model.Ticket;
 import com.example.model.TicketsWrapper;
 import com.example.utils.TimeUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +26,19 @@ public class TicketService {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<Ticket> readTickets(String jsonOrPath, TicketSourceType sourceType) {
+        if (sourceType == null) {
+            log.error("Source type cannot be null");
+            throw new IllegalArgumentException("Source type cannot be null");
+        }
         switch (sourceType) {
             case API:
                 try {
                     return readTickets(jsonOrPath);
-                } catch (IOException e) {
+                } catch (IllegalArgumentException e) {
                     log.error("Cannot read source json");
+                    throw new RuntimeException(e);
+                } catch (JsonProcessingException e) {
+                    log.error("JSON parsing error");
                     throw new RuntimeException(e);
                 }
             case FILE:
@@ -41,15 +49,15 @@ public class TicketService {
                     throw new RuntimeException(e);
                 }
             default: {
-                log.error("Unknown source type");
-                throw new RuntimeException("Unknown source type");
+                log.error("Unknown source type: {}", sourceType);
+                throw new IllegalArgumentException("Unknown source type");
             }
         }
     }
 
-    public static List<Ticket> readTickets(String json) throws IOException {
+    public List<Ticket> readTickets(String json) throws IllegalArgumentException, JsonProcessingException {
         if (json == null || json.isEmpty()) {
-            throw new IOException("Json reading error");
+            throw new IllegalArgumentException("Json reading error");
         }
 
         TicketsWrapper wrapper = objectMapper.readValue(json, TicketsWrapper.class);
